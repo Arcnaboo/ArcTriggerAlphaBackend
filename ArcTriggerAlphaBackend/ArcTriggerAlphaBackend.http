@@ -1,0 +1,6 @@
+@ArcTriggerAlphaBackend_HostAddress = http://localhost:5197
+
+GET {{ArcTriggerAlphaBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
