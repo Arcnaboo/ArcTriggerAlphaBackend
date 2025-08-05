@@ -15,88 +15,66 @@ namespace ArcTriggerAlphaBackend.Database.Repositories
         Task IMultilRepository.AddOrderAsync(Order order)
         {
             _context.Orders.Add(order);
-            return _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
 
         Task IMultilRepository.AddStockAsync(Stock stock)
         {
             _context.Stocks.Add(stock);
-            return _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
 
         Task IMultilRepository.AddTaskAsync(StockUpdateTask task)
         {
             _context.Tasks.Add(task);
-            return _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
 
         Task IMultilRepository.AddTradeAsync(TradeSetup trade)
         {
             _context.Trades.Add(trade);
-            return _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
 
         Task IMultilRepository.AddUserAsync(User user)
         {
             _context.Users.Add(user);
-            return _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
 
         async Task IMultilRepository.DeleteOrderAsync(Guid id)
         {
             var entity = await _context.Orders.FindAsync(id);
-            if (entity != null)
-            {
-                _context.Orders.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
+            if (entity != null) _context.Orders.Remove(entity);
         }
 
         async Task IMultilRepository.DeleteStockAsync(Guid id)
         {
             var entity = await _context.Stocks.FindAsync(id);
-            if (entity != null)
-            {
-                _context.Stocks.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
+            if (entity != null) _context.Stocks.Remove(entity);
         }
 
         async Task IMultilRepository.DeleteTaskAsync(Guid id)
         {
             var entity = await _context.Tasks.FindAsync(id);
-            if (entity != null)
-            {
-                _context.Tasks.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
+            if (entity != null) _context.Tasks.Remove(entity);
         }
 
         async Task IMultilRepository.DeleteTradeAsync(Guid id)
         {
             var entity = await _context.Trades.FindAsync(id);
-            if (entity != null)
-            {
-                _context.Trades.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
+            if (entity != null) _context.Trades.Remove(entity);
         }
 
         async Task IMultilRepository.DeleteUserAsync(Guid id)
         {
             var entity = await _context.Users.FindAsync(id);
-            if (entity != null)
-            {
-                _context.Users.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
+            if (entity != null) _context.Users.Remove(entity);
         }
 
         Task<List<StockUpdateTask>> IMultilRepository.GetActiveTasksAsync()
         {
-            return _context.Tasks
-                .Where(t => t.IsActive)
-                .ToListAsync();
+            return _context.Tasks.Where(t => t.IsActive).ToListAsync();
         }
 
         Task<List<StockUpdateTask>> IMultilRepository.GetAllTasksAsync()
@@ -165,9 +143,35 @@ namespace ArcTriggerAlphaBackend.Database.Repositories
             return _context.Users.FindAsync(id).AsTask();
         }
 
+        Task<bool> IMultilRepository.UserExistsAsync(string email)
+        {
+            return _context.Users
+                .AnyAsync(u => u.Email.ToLower() == email.ToLower());
+        }
+
+        async Task IMultilRepository.UpdateLastRunAsync(Guid id)
+        {
+            var task = await _context.Tasks.FindAsync(id);
+            if (task != null)
+            {
+                typeof(StockUpdateTask).GetProperty("LastUpdateTime")!
+                    .SetValue(task, DateTime.UtcNow);
+            }
+        }
+
+        async Task IMultilRepository.UpdateTaskStateAsync(Guid id, bool isActive)
+        {
+            var task = await _context.Tasks.FindAsync(id);
+            if (task != null)
+            {
+                typeof(StockUpdateTask).GetProperty("IsActive")!
+                    .SetValue(task, isActive);
+            }
+        }
+
         void IMultilRepository.Reload()
         {
-            // optional no-op
+            // No-op (optional hook for manual refresh)
         }
 
         async Task IMultilRepository.SaveChangesAsync()
@@ -202,34 +206,6 @@ namespace ArcTriggerAlphaBackend.Database.Repositories
                     throw;
                 }
             } while (failed && retry > 0);
-        }
-
-        async Task IMultilRepository.UpdateLastRunAsync(Guid id)
-        {
-            var task = await _context.Tasks.FindAsync(id);
-            if (task != null)
-            {
-                typeof(StockUpdateTask).GetProperty("LastUpdateTime")!
-                    .SetValue(task, DateTime.UtcNow);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        async Task IMultilRepository.UpdateTaskStateAsync(Guid id, bool isActive)
-        {
-            var task = await _context.Tasks.FindAsync(id);
-            if (task != null)
-            {
-                typeof(StockUpdateTask).GetProperty("IsActive")!
-                    .SetValue(task, isActive);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        Task<bool> IMultilRepository.UserExistsAsync(string email)
-        {
-            return _context.Users
-                .AnyAsync(u => u.Email.ToLower() == email.ToLower());
         }
     }
 }
