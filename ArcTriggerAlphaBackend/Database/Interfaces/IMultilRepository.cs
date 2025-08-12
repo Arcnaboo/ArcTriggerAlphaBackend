@@ -18,6 +18,8 @@ namespace ArcTriggerAlphaBackend.Database.Interfaces
         // Orders
         Task<Order?> GetOrderByIdAsync(Guid id);
         Task<List<Order>> GetOrdersAsync();
+        Task<List<Order>> GetOrdersByStockIdAsync(Guid stockId);  // New
+        Task<List<Order>> GetOrdersByDateRangeAsync(DateTime start, DateTime end);  // New
         Task AddOrderAsync(Order order);
         Task DeleteOrderAsync(Guid id);
 
@@ -30,6 +32,7 @@ namespace ArcTriggerAlphaBackend.Database.Interfaces
         // Stocks
         Task<Stock?> GetStockByIdAsync(Guid id);
         Task<Stock?> GetStockByTickerAtAsync(string ticker, DateTime snapshotTime);
+        Task<List<Stock>> GetWatchlistStocksAsync();  // New
         Task AddStockAsync(Stock stock);
         Task DeleteStockAsync(Guid id);
         Task<List<Stock>> GetStockHistoryAsync(string ticker);
@@ -42,6 +45,10 @@ namespace ArcTriggerAlphaBackend.Database.Interfaces
         Task DeleteTaskAsync(Guid id);
         Task UpdateTaskStateAsync(Guid id, bool isActive);
         Task UpdateLastRunAsync(Guid id);
+
+        // Bulk Operations
+        Task BulkInsertOrdersAsync(IEnumerable<Order> orders);  // New
+        Task BulkUpdateStocksAsync(IEnumerable<Stock> stocks);  // New
 
         // Persistence
         Task SaveChangesAsync();

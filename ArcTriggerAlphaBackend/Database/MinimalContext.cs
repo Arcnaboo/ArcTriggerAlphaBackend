@@ -13,15 +13,34 @@ namespace ArcTriggerAlphaBackend.Database
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("Data Source=arc_trigger_alpha.db");
+            optionsBuilder
+                .UseSqlite("Data Source=arc_trigger_alpha.db")
+                .UseLazyLoadingProxies();
+                
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Users
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
+            // Stocks
+            modelBuilder.Entity<Stock>()
+                .HasIndex(s => s.Ticker);
+
+            // Orders
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Stock)
+                .WithMany()
+                .HasForeignKey(o => o.StockId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Order>()
+                .HasIndex(o => o.OrderDateTime);
+
+            // StockUpdateTasks
             modelBuilder.Entity<StockUpdateTask>()
                 .HasOne<Stock>()
                 .WithMany()

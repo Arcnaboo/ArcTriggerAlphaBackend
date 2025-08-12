@@ -8,204 +8,264 @@ using System.Threading.Tasks;
 
 namespace ArcTriggerAlphaBackend.Database.Repositories
 {
-    public class MultiRepo : IMultilRepository
+    public sealed class MultiRepo : IMultilRepository
     {
-        private readonly MinimalContext _context = new();
+        private readonly MinimalContext _minimalContext;
 
-        Task IMultilRepository.AddOrderAsync(Order order)
+        public MultiRepo()
         {
-            _context.Orders.Add(order);
-            return Task.CompletedTask;
+            _minimalContext = new MinimalContext();
+            _minimalContext.Database.EnsureCreated();
         }
 
-        Task IMultilRepository.AddStockAsync(Stock stock)
+        async Task IMultilRepository.AddOrderAsync(Order order)
         {
-            _context.Stocks.Add(stock);
-            return Task.CompletedTask;
+            await _minimalContext.Orders.AddAsync(order);
+            await _minimalContext.SaveChangesAsync();
         }
 
-        Task IMultilRepository.AddTaskAsync(StockUpdateTask task)
+        async Task IMultilRepository.AddStockAsync(Stock stock)
         {
-            _context.Tasks.Add(task);
-            return Task.CompletedTask;
+            await _minimalContext.Stocks.AddAsync(stock);
+            await _minimalContext.SaveChangesAsync();
         }
 
-        Task IMultilRepository.AddTradeAsync(TradeSetup trade)
+        async Task IMultilRepository.AddTaskAsync(StockUpdateTask task)
         {
-            _context.Trades.Add(trade);
-            return Task.CompletedTask;
+            await _minimalContext.Tasks.AddAsync(task);
+            await _minimalContext.SaveChangesAsync();
         }
 
-        Task IMultilRepository.AddUserAsync(User user)
+        async Task IMultilRepository.AddTradeAsync(TradeSetup trade)
         {
-            _context.Users.Add(user);
-            return Task.CompletedTask;
+            await _minimalContext.Trades.AddAsync(trade);
+            await _minimalContext.SaveChangesAsync();
+        }
+
+        async Task IMultilRepository.AddUserAsync(User user)
+        {
+            await _minimalContext.Users.AddAsync(user);
+            await _minimalContext.SaveChangesAsync();
+        }
+
+        async Task IMultilRepository.BulkInsertOrdersAsync(IEnumerable<Order> orders)
+        {
+            await _minimalContext.Orders.AddRangeAsync(orders);
+            await _minimalContext.SaveChangesAsync();
+        }
+
+        async Task IMultilRepository.BulkUpdateStocksAsync(IEnumerable<Stock> stocks)
+        {
+            _minimalContext.Stocks.UpdateRange(stocks);
+            await _minimalContext.SaveChangesAsync();
         }
 
         async Task IMultilRepository.DeleteOrderAsync(Guid id)
         {
-            var entity = await _context.Orders.FindAsync(id);
-            if (entity != null) _context.Orders.Remove(entity);
+            var order = await _minimalContext.Orders.FindAsync(id);
+            if (order != null)
+            {
+                _minimalContext.Orders.Remove(order);
+                await _minimalContext.SaveChangesAsync();
+            }
         }
 
         async Task IMultilRepository.DeleteStockAsync(Guid id)
         {
-            var entity = await _context.Stocks.FindAsync(id);
-            if (entity != null) _context.Stocks.Remove(entity);
+            var stock = await _minimalContext.Stocks.FindAsync(id);
+            if (stock != null)
+            {
+                _minimalContext.Stocks.Remove(stock);
+                await _minimalContext.SaveChangesAsync();
+            }
         }
 
         async Task IMultilRepository.DeleteTaskAsync(Guid id)
         {
-            var entity = await _context.Tasks.FindAsync(id);
-            if (entity != null) _context.Tasks.Remove(entity);
+            var task = await _minimalContext.Tasks.FindAsync(id);
+            if (task != null)
+            {
+                _minimalContext.Tasks.Remove(task);
+                await _minimalContext.SaveChangesAsync();
+            }
         }
 
         async Task IMultilRepository.DeleteTradeAsync(Guid id)
         {
-            var entity = await _context.Trades.FindAsync(id);
-            if (entity != null) _context.Trades.Remove(entity);
+            var trade = await _minimalContext.Trades.FindAsync(id);
+            if (trade != null)
+            {
+                _minimalContext.Trades.Remove(trade);
+                await _minimalContext.SaveChangesAsync();
+            }
         }
 
         async Task IMultilRepository.DeleteUserAsync(Guid id)
         {
-            var entity = await _context.Users.FindAsync(id);
-            if (entity != null) _context.Users.Remove(entity);
+            var user = await _minimalContext.Users.FindAsync(id);
+            if (user != null)
+            {
+                _minimalContext.Users.Remove(user);
+                await _minimalContext.SaveChangesAsync();
+            }
         }
 
-        Task<List<StockUpdateTask>> IMultilRepository.GetActiveTasksAsync()
+        async Task<List<StockUpdateTask>> IMultilRepository.GetActiveTasksAsync()
         {
-            return _context.Tasks.Where(t => t.IsActive).ToListAsync();
-        }
-
-        Task<List<StockUpdateTask>> IMultilRepository.GetAllTasksAsync()
-        {
-            return _context.Tasks.ToListAsync();
-        }
-
-        Task<List<TradeSetup>> IMultilRepository.GetAllTradesAsync()
-        {
-            return _context.Trades.ToListAsync();
-        }
-
-        Task<List<User>> IMultilRepository.GetAllUsersAsync()
-        {
-            return _context.Users.ToListAsync();
-        }
-
-        Task<Order?> IMultilRepository.GetOrderByIdAsync(Guid id)
-        {
-            return _context.Orders.FindAsync(id).AsTask();
-        }
-
-        Task<List<Order>> IMultilRepository.GetOrdersAsync()
-        {
-            return _context.Orders.ToListAsync();
-        }
-
-        Task<Stock?> IMultilRepository.GetStockByIdAsync(Guid id)
-        {
-            return _context.Stocks.FindAsync(id).AsTask();
-        }
-
-        Task<Stock?> IMultilRepository.GetStockByTickerAtAsync(string ticker, DateTime snapshotTime)
-        {
-            return _context.Stocks
-                .Where(s => s.Ticker == ticker && s.SnapshotTime == snapshotTime)
-                .FirstOrDefaultAsync();
-        }
-
-        Task<List<Stock>> IMultilRepository.GetStockHistoryAsync(string ticker)
-        {
-            return _context.Stocks
-                .Where(s => s.Ticker == ticker)
-                .OrderByDescending(s => s.SnapshotTime)
+            return await _minimalContext.Tasks
+                .Where(t => t.IsActive)
+                .AsNoTracking()
                 .ToListAsync();
         }
 
-        Task<StockUpdateTask?> IMultilRepository.GetTaskByIdAsync(Guid id)
+        async Task<List<StockUpdateTask>> IMultilRepository.GetAllTasksAsync()
         {
-            return _context.Tasks.FindAsync(id).AsTask();
+            return await _minimalContext.Tasks
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        Task<TradeSetup?> IMultilRepository.GetTradeByIdAsync(Guid id)
+        async Task<List<TradeSetup>> IMultilRepository.GetAllTradesAsync()
         {
-            return _context.Trades.FindAsync(id).AsTask();
+            return await _minimalContext.Trades
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        Task<User?> IMultilRepository.GetUserByEmailAsync(string email)
+        async Task<List<User>> IMultilRepository.GetAllUsersAsync()
         {
-            return _context.Users
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            return await _minimalContext.Users
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        Task<User?> IMultilRepository.GetUserByIdAsync(Guid id)
+        async Task<Order?> IMultilRepository.GetOrderByIdAsync(Guid id)
         {
-            return _context.Users.FindAsync(id).AsTask();
+            return await _minimalContext.Orders
+                .Include(o => o.Stock)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.ID == id);
         }
 
-        Task<bool> IMultilRepository.UserExistsAsync(string email)
+        async Task<List<Order>> IMultilRepository.GetOrdersAsync()
         {
-            return _context.Users
-                .AnyAsync(u => u.Email.ToLower() == email.ToLower());
+            return await _minimalContext.Orders
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        async Task<List<Order>> IMultilRepository.GetOrdersByDateRangeAsync(DateTime start, DateTime end)
+        {
+            return await _minimalContext.Orders
+                .Where(o => o.OrderDateTime >= start && o.OrderDateTime <= end)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        async Task<List<Order>> IMultilRepository.GetOrdersByStockIdAsync(Guid stockId)
+        {
+            return await _minimalContext.Orders
+                .Where(o => o.StockId == stockId)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        async Task<Stock?> IMultilRepository.GetStockByIdAsync(Guid id)
+        {
+            return await _minimalContext.Stocks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == id);
+        }
+
+        async Task<Stock?> IMultilRepository.GetStockByTickerAtAsync(string ticker, DateTime snapshotTime)
+        {
+            return await _minimalContext.Stocks
+                .Where(s => s.Ticker == ticker && s.SnapshotTime == snapshotTime)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+        }
+
+        async Task<List<Stock>> IMultilRepository.GetStockHistoryAsync(string ticker)
+        {
+            return await _minimalContext.Stocks
+                .Where(s => s.Ticker == ticker)
+                .OrderByDescending(s => s.SnapshotTime)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        async Task<StockUpdateTask?> IMultilRepository.GetTaskByIdAsync(Guid id)
+        {
+            return await _minimalContext.Tasks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == id);
+        }
+
+        async Task<TradeSetup?> IMultilRepository.GetTradeByIdAsync(Guid id)
+        {
+            return await _minimalContext.Trades
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == id);
+        }
+
+        async Task<User?> IMultilRepository.GetUserByEmailAsync(string email)
+        {
+            return await _minimalContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+        }
+
+        async Task<User?> IMultilRepository.GetUserByIdAsync(Guid id)
+        {
+            return await _minimalContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        async Task<List<Stock>> IMultilRepository.GetWatchlistStocksAsync()
+        {
+            return await _minimalContext.Stocks
+                .Where(s => s.LastPrice > 0)
+                .OrderBy(s => s.Ticker)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        async Task IMultilRepository.SaveChangesAsync()
+        {
+            await _minimalContext.SaveChangesAsync();
         }
 
         async Task IMultilRepository.UpdateLastRunAsync(Guid id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var task = await _minimalContext.Tasks.FindAsync(id);
             if (task != null)
             {
-                typeof(StockUpdateTask).GetProperty("LastUpdateTime")!
-                    .SetValue(task, DateTime.UtcNow);
+                task.MarkUpdated();
+                await _minimalContext.SaveChangesAsync();
             }
         }
 
         async Task IMultilRepository.UpdateTaskStateAsync(Guid id, bool isActive)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var task = await _minimalContext.Tasks.FindAsync(id);
             if (task != null)
             {
-                typeof(StockUpdateTask).GetProperty("IsActive")!
-                    .SetValue(task, isActive);
+                task.SetActive(isActive);
+                await _minimalContext.SaveChangesAsync();
             }
+        }
+
+        async Task<bool> IMultilRepository.UserExistsAsync(string email)
+        {
+            return await _minimalContext.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
         }
 
         void IMultilRepository.Reload()
         {
-            // No-op (optional hook for manual refresh)
-        }
-
-        async Task IMultilRepository.SaveChangesAsync()
-        {
-            int retry = 3;
-            bool failed;
-            do
-            {
-                failed = false;
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException ex)
-                {
-                    failed = true;
-                    if (--retry < 0) throw;
-
-                    foreach (var entry in ex.Entries)
-                    {
-                        await entry.ReloadAsync();
-                        if (entry.State == EntityState.Modified)
-                        {
-                            var db = entry.GetDatabaseValues();
-                            entry.OriginalValues.SetValues(db);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Save Error] {ex.Message}");
-                    throw;
-                }
-            } while (failed && retry > 0);
+            // Implementation not needed for current requirements
         }
     }
 }
