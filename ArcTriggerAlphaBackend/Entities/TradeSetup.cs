@@ -8,7 +8,8 @@
         public string Ticker { get; private set; } = default!;
         public decimal TriggerPrice { get; private set; }
         public int Strike { get; private set; }
-        public string CallPut { get; private set; } = default!;
+        // Rename for UI consistency (if you agree):  
+        public string OrderType { get; private set; }  // Was `CallPut`  
         public DateTime ExpiryDate { get; private set; }
         public decimal LimitOffset { get; private set; }
         public decimal PositionSize { get; private set; }
@@ -23,7 +24,7 @@
             string ticker,
             decimal triggerPrice,
             int strike,
-            string callPut,
+            string otype,
             DateTime expiryDate,
             decimal limitOffset,
             decimal positionSize)
@@ -33,7 +34,7 @@
             Ticker = ticker;
             TriggerPrice = triggerPrice;
             Strike = strike;
-            CallPut = callPut;
+            OrderType = otype;
             ExpiryDate = expiryDate;
             LimitOffset = limitOffset;
             PositionSize = positionSize;
